@@ -1,0 +1,28 @@
+---
+export const prerender = false;
+
+import Layout from '~/layouts/PageLayout.astro';
+import APIPostList from '@/components/widgets/APIPostList.astro';
+
+// 메타데이터는 간단히, 필요시 src/config.yaml/ts에서 가져와도 됨
+const metadata = {
+  title: 'Home',
+  description: 'Latest posts',
+};
+---
+
+<Layout metadata={metadata}>
+  <section class="mx-auto max-w-3xl py-8">
+    <header class="mb-6 flex items-center justify-between">
+      <h1 class="text-2xl font-semibold">Latest Posts</h1>
+      <a
+        href="/posts/new"
+        class="inline-flex items-center rounded-md bg-blue-600 px-3 py-1.5 text-white text-sm hover:bg-blue-700"
+      >
+        글쓰기
+      </a>
+    </header>
+
+    <APIPostList />
+  </section>
+</Layout>

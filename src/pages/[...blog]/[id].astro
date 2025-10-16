@@ -1,0 +1,70 @@
+---
+export const prerender = false;
+
+import Layout from '~/layouts/PageLayout.astro';
+import SinglePost from '~/components/blog/SinglePost.astro';
+import ToBlogLink from '~/components/blog/ToBlogLink.astro';
+
+import { getPost } from '@/lib/api';
+import { getCanonical, getBlogPermalink } from '~/utils/permalinks';
+
+// URL 파라미터 가져오기 (예: /blog/3)
+const raw = Astro.params.id;
+const id = Array.isArray(raw) ? raw[0] : raw;
+
+// 데이터 불러오기
+const data = id ? await getPost(id) : null;
+const notFound = !data;
+
+if (notFound) {
+  Astro.response.status = 404;
+}
+
+const metadata = notFound
+  ? {
+      title: 'Not Found',
+      description: `포스트를 찾을 수 없습니다: ${id}`,
+    }
+  : {
+      title: data!.title,
+      description: data!.excerpt ?? '',
+      robots: { index: true, follow: true },
+      openGraph: { type: 'article' },
+    };
+
+const url = notFound ? getCanonical(getBlogPermalink()) : getCanonical(`/blog/${data!.id}`);
+---
+
+<Layout metadata={metadata}>
+  {notFound ? (
+    <section class="px-6 py-16 max-w-3xl mx-auto">
+      <h1 class="text-2xl font-semibold mb-2">포스트를 찾을 수 없습니다</h1>
+      <p class="opacity-70 mb-6">{id}</p>
+      <a href={getBlogPermalink()} class="text-blue-600 hover:underline">← 목록으로</a>
+    </section>
+  ) : (
+    <>
+      <SinglePost
+        post={{
+          id: String(data!.id),
+          slug: data!.slug ?? String(data!.id),
+          permalink: `/blog/${data!.id}`,
+          publishDate: new Date(data!.published_at ?? data!.created_at ?? Date.now()),
+          title: data!.title,
+          excerpt: data!.excerpt ?? '',
+        }}
+        url={url}
+      >
+        {data!.content_html ? (
+          <Fragment set:html={data!.content_html} />
+        ) : data!.content_md ? (
+          <pre class="whitespace-pre-wrap">{data!.content_md}</pre>
+        ) : (
+          <p class="opacity-70">본문이 없습니다.</p>
+        )}
+      </SinglePost>
+
+      <ToBlogLink />
+    </>
+  )}
+</Layout>

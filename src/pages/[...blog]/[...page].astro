@@ -1,0 +1,49 @@
+---
+// ✅ API 기반 SSR (정적 getStaticPaths 제거)
+export const prerender = false;
+
+import Layout from '~/layouts/PageLayout.astro';
+import Headline from '~/components/blog/Headline.astro';
+import Pagination from '~/components/blog/Pagination.astro';
+import { getBlogPermalink } from '~/utils/permalinks';
+import { getPosts, type ApiPost } from '@/lib/api';
+import ApiBlogList from '@/components/blog/ApiBlogList.astro';
+
+// page 파라미터 안전 파싱
+const raw = Astro.params.page;
+const pageParam = Array.isArray(raw) ? raw[0] : raw;
+const currentPage = Number(pageParam);
+const page = Number.isFinite(currentPage) && currentPage > 0 ? currentPage : 1;
+
+const PAGE_SIZE = 10;
+
+// 🔹 백엔드가 total/offset을 안 준다는 가정 → 전량 받아서 슬라이싱
+const all: ApiPost[] = await getPosts();
+const start = (page - 1) * PAGE_SIZE;
+const end = start + PAGE_SIZE;
+const rows = all.slice(start, end);
+
+// Prev/Next URL 생성
+const base = getBlogPermalink();               // 보통 '/blog'
+const prevUrl: string | undefined =
+  page > 1 ? (page === 2 ? base : `${base}/${page - 1}`) : undefined;
+
+const nextUrl: string | undefined =
+  end < all.length ? `${base}/${page + 1}` : undefined;
+
+const metadata = {
+  title: `Blog${page > 1 ? ` — Page ${page}` : ''}`,
+  robots: { index: page === 1, follow: true },
+  openGraph: { type: 'blog' },
+};
+---
+
+<Layout metadata={metadata}>
+  <section class="px-6 sm:px-6 py-12 sm:py-16 lg:py-20 mx-auto max-w-4xl">
+    <Headline subtitle="최근 글 목록">Blog</Headline>
+
+    <ApiBlogList apiPosts={rows} />
+
+    <Pagination prevUrl={prevUrl} nextUrl={nextUrl} />
+  </section>
+</Layout>

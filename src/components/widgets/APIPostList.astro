@@ -1,0 +1,39 @@
+---
+import { getPosts } from '@/lib/api'
+import type { ApiPost } from '@/lib/api'
+
+const rows: ApiPost[] = await getPosts();
+
+type Item = {
+  id: number | string;
+  title: string;
+  excerpt?: string | null;
+  date?: string | number | Date | null;
+  url: string;
+};
+
+const items: Item[] = (rows ?? [])
+  .filter((p): p is ApiPost => !!p && typeof p === 'object' && 'title' in p)
+  .map((p: ApiPost) => ({
+    id: p.id ?? p.slug ?? String(p.id),
+    title: p.title ?? '(제목 없음)',
+    excerpt: p.excerpt ?? null,
+    date: p.published_at ?? p.created_at ?? null,
+    url: `/posts/${p.id ?? p.slug ?? ''}`,
+  }));
+---
+
+{items.length === 0 ? (
+  <p class="text-zinc-500">게시글이 없습니다.</p>
+) : (
+  <ul class="space-y-3">
+    {items.map((p) => (
+      <li class="border border-zinc-200 dark:border-zinc-800 rounded px-4 py-3">
+        <a href={p.url} class="font-medium hover:underline">{p.title}</a>
+        {p.excerpt && <p class="text-sm text-zinc-500 mt-1">{p.excerpt}</p>}
+        <p class="text-xs text-zinc-400 mt-1">
+        </p>
+      </li>
+    ))}
+  </ul>
+)}

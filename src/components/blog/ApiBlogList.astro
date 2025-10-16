@@ -1,0 +1,35 @@
+---
+// src/components/blog/ApiBlogList.astro (가정) 또는 현재 파일
+import BlogList from '~/components/blog/List.astro';
+import { getBlogPermalink } from '~/utils/permalinks';
+import type { ApiPost } from '@/lib/api';
+import type { Post } from '~/types';
+
+interface Props {
+  apiPosts: ApiPost[];
+}
+const { apiPosts = [] } = Astro.props as Props;
+
+const BLOG_BASE = getBlogPermalink();
+
+const mapped: Post[] = apiPosts.map((p): Post => {
+  // ✅ id 문자열로 통일 (slug 대체까지 겸함)
+  const idStr = String(p.id ?? '');
+
+  // ✅ permalink도 /blog/:id 로 강제
+  const permalink = `${BLOG_BASE}/${idStr}`;
+
+  return {
+    id: idStr,
+    slug: idStr, // ✅ 혹시 컴포넌트가 slug로 링크 만들어도 /blog/:id 로 맞춰짐
+    permalink,   // ✅ BlogList가 permalink 쓰면 그대로 /blog/:id
+    publishDate: p.published_at
+      ? new Date(p.published_at)
+      : (p.created_at ? new Date(p.created_at) : new Date()),
+    title: p.title ?? '(제목 없음)',
+    excerpt: p.excerpt ?? '',
+  } as Post;
+});
+---
+
+<BlogList posts={mapped} />
