@@ -2,6 +2,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 import { defineConfig } from "astro/config";
+import node from "@astrojs/node"; // ✅ 추가: Node 어댑터
 
 import sitemap from "@astrojs/sitemap";
 import tailwind from "@astrojs/tailwind";
@@ -26,12 +27,11 @@ const whenExternalScripts = (items: (() => AstroIntegration) | (() => AstroInteg
   hasExternalScripts ? (Array.isArray(items) ? items.map((item) => item()) : [items()]) : [];
 
 export default defineConfig({
-  output: "server",
+  output: "server", // ✅ SSR
+  adapter: node({ mode: "standalone" }), // ✅ 어댑터 적용 (Amplify에서 npm start로 실행 가능)
 
   integrations: [
-    tailwind({
-      applyBaseStyles: false,
-    }),
+    tailwind({ applyBaseStyles: false }),
     sitemap(),
     mdx(),
     icon({
@@ -50,29 +50,16 @@ export default defineConfig({
         ],
       },
     }),
-
-    ...whenExternalScripts(() =>
-      partytown({
-        config: { forward: ["dataLayer.push"] },
-      })
-    ),
-
+    ...whenExternalScripts(() => partytown({ config: { forward: ["dataLayer.push"] } })),
     compress({
       CSS: true,
-      HTML: {
-        "html-minifier-terser": {
-          removeAttributeQuotes: false,
-        },
-      },
+      HTML: { "html-minifier-terser": { removeAttributeQuotes: false } },
       Image: false,
       JavaScript: true,
       SVG: false,
       Logger: 1,
     }),
-
-    astrowind({
-      config: "./src/config.yaml",
-    }),
+    astrowind({ config: "./src/config.yaml" }),
   ],
 
   image: {
